@@ -1,1 +1,140 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Geston MD Mini</title><style>body{font-family:system-ui;background:#0b1020;color:#fff;margin:0;padding:24px}main{max-width:620px;margin:auto}.card{background:#141b31;border:1px solid #26304d;border-radius:18px;padding:22px;margin:14px 0}input,button{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:1px solid #34405f;background:#0d1428;color:#fff;margin-top:10px}button{background:#1f7aff;border:0;font-weight:700;cursor:pointer}.code{font-size:32px;letter-spacing:5px;text-align:center;padding:20px;background:#080d1c;border-radius:14px;margin-top:16px}.muted{color:#aab4cf}.ok{color:#62e6a6}</style></head><body><main><div class="card"><h1>🤖 Geston MD Mini</h1><p class="muted">Connecte ton WhatsApp au bot sans copier de SESSION ID.</p><label>Numéro WhatsApp</label><input id="phone" placeholder="243XXXXXXXXX" inputmode="numeric"><label>Code parrainage (facultatif)</label><input id="ref" placeholder="Ex. ABC123"><button id="go">Générer le code</button><div id="out"></div></div><div class="card"><h2>🎁 Parrainage</h2><p class="muted">Crée ton lien et partage-le.</p><button id="refbtn">Créer mon lien</button><div id="refout"></div></div></main><script>const q=new URLSearchParams(location.search);document.getElementById('ref').value=q.get('ref')||'';let timer;document.getElementById('go').onclick=async()=>{const out=document.getElementById('out');out.innerHTML='<p>Préparation…</p>';const r=await fetch('/api/pair',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({phone:document.getElementById('phone').value,ref:document.getElementById('ref').value})});const d=await r.json();if(!r.ok){out.innerHTML='<p>'+d.error+'</p>';return}out.innerHTML='<p>Demande créée. Attends le code…</p><div id="code"></div>';clearInterval(timer);timer=setInterval(async()=>{const s=await fetch('/api/status/'+d.id).then(x=>x.json());if(s.code)document.getElementById('code').innerHTML='<div class="code">'+s.code+'</div><p>Dans WhatsApp : Appareils connectés → Connecter un appareil → utiliser le code.</p>';if(s.status==='connected'){document.getElementById('code').innerHTML+='<p class="ok">✅ WhatsApp connecté à Geston MD Mini.</p>';clearInterval(timer)}if(s.error){document.getElementById('code').innerHTML+='<p>'+s.error+'</p>';clearInterval(timer)}},1500)};document.getElementById('refbtn').onclick=async()=>{const d=await fetch('/api/referral',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}).then(r=>r.json());document.getElementById('refout').innerHTML='<p><b>'+d.code+'</b></p><input value="'+d.url+'" readonly><p>Parrainages confirmés : 0</p>'}</script></body></html>
+
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <title>Geston MD</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      padding: 22px; background: #0b1020; color: #f4f7ff;
+      font: 16px system-ui, sans-serif;
+    }
+    main {
+      width: 100%; max-width: 460px; padding: 26px;
+      border: 1px solid #263653; border-radius: 20px;
+      background: #121c30;
+    }
+    h1 { margin: 0 0 8px; }
+    p { color: #aebbd2; line-height: 1.5; }
+    label { display: block; margin: 24px 0 8px; font-weight: 650; }
+    input, button {
+      width: 100%; padding: 14px; border-radius: 11px; font: inherit;
+    }
+    input { background: #080f20; color: white; border: 1px solid #354665; }
+    button {
+      margin-top: 12px; background: #347cff; color: white;
+      border: 0; font-weight: 700;
+    }
+    button:disabled { opacity: .6; }
+    .code {
+      margin-top: 18px; padding: 20px; text-align: center;
+      font-size: 28px; letter-spacing: 4px;
+      border: 1px dashed #526b93; border-radius: 12px;
+      overflow-wrap: anywhere;
+    }
+    .msg { padding: 12px; background: #0a1222; border-radius: 10px; }
+    .small { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🤖 Geston MD</h1>
+    <p>Connecte ton compte WhatsApp avec un code d’appairage.</p>
+
+    <form id="pair">
+      <label for="phone">Numéro WhatsApp international</label>
+      <input id="phone" type="tel" inputmode="numeric"
+        autocomplete="tel" placeholder="243XXXXXXXXX"
+        required minlength="8" maxlength="15">
+      <button id="submit" type="submit">Générer le code</button>
+    </form>
+
+    <div id="result" aria-live="polite"></div>
+    <p class="small">
+      Saisis ton numéro sans le signe +. Ne partage jamais ton code d’appairage.
+    </p>
+  </main>
+
+  <script>
+    const form = document.querySelector('#pair');
+    const phone = document.querySelector('#phone');
+    const button = document.querySelector('#submit');
+    const result = document.querySelector('#result');
+    let poll;
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (poll) clearInterval(poll);
+
+      const number = phone.value.replace(/\D/g, '');
+      if (number.length < 8 || number.length > 15) {
+        result.textContent = 'Vérifie le numéro international.';
+        return;
+      }
+
+      button.disabled = true;
+      result.textContent = 'Démarrage du bot…';
+
+      try {
+        const response = await fetch('/api/pair', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ phone: number })
+        });
+        const data = await response.json();
+        if (!response.ok) throw Error(data.error || 'Échec de la demande');
+
+        result.textContent = 'Recherche du code…';
+        let attempts = 0;
+
+        poll = setInterval(async () => {
+          try {
+            const r = await fetch('/api/status/' + encodeURIComponent(data.id));
+            const status = await r.json();
+
+            if (status.code) {
+              clearInterval(poll);
+              result.replaceChildren();
+
+              const code = document.createElement('div');
+              code.className = 'code';
+              code.textContent = status.code;
+
+              const help = document.createElement('p');
+              help.className = 'msg';
+              help.textContent =
+                'Dans WhatsApp : Appareils connectés, puis Connecter avec un numéro de téléphone.';
+
+              result.append(code, help);
+              button.disabled = false;
+            } else if (
+              status.error ||
+              ['error', 'timeout', 'stopped', 'logged_out'].includes(status.status)
+            ) {
+              clearInterval(poll);
+              result.textContent =
+                status.error || 'Le code n’a pas pu être obtenu. Réessaie plus tard.';
+              button.disabled = false;
+            } else if (++attempts > 40) {
+              clearInterval(poll);
+              result.textContent = 'Le code tarde à arriver. Réessaie plus tard.';
+              button.disabled = false;
+            }
+          } catch {
+            clearInterval(poll);
+            result.textContent = 'Erreur lors de la vérification du code.';
+            button.disabled = false;
+          }
+        }, 1500);
+      } catch (error) {
+        result.textContent = error.message;
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
