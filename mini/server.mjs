@@ -20,7 +20,7 @@ const TTL_MS = Math.max(5, Number(process.env.PAIRING_TTL_MINUTES || 15)) * 60_0
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(ROOT, 'public')));
+app.use(express.static(path.join(ROOT, 'public-2')));
 
 const state = new Map();
 let db = { referrals: {}, users: {} };
@@ -167,7 +167,11 @@ app.get('/api/referral/:code', (req, res) => {
 });
 
 app.use((req, res) => {
-  res.sendFile(path.resolve(process.cwd(), 'mini', '..', 'public', 'index.html'));
+  res.sendFile(path.join(ROOT, 'public-2', 'index.html'));
+});
 
 await ensureDirs();
-app.listen(PORT, () => console.log(`Geston MD Mini listening on ${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(`Geston MD Mini listening on ${PORT}`);
+});
