@@ -159,6 +159,7 @@ app.post('/api/referral', async (req, res) => {
   const url = `${PUBLIC_URL || `http://localhost:${PORT}`}/?ref=${code}`;
   res.json({ code, url, count: 0 });
 });
+
 app.get('/api/referral/:code', (req, res) => {
   const r = db.referrals[req.params.code];
   if (!r) return res.status(404).json({ error: 'Not found' });
