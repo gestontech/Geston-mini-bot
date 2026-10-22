@@ -166,8 +166,7 @@ app.get('/api/referral/:code', (req, res) => {
 });
 
 app.use((req, res) => {
-  res.sendFile(path.join(ROOT, 'public', 'index.html'));
-});
+  res.sendFile(path.resolve(process.cwd(), 'mini', '..', 'public', 'index.html'));
 
 await ensureDirs();
 app.listen(PORT, () => console.log(`Geston MD Mini listening on ${PORT}`));
