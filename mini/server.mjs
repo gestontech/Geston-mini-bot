@@ -39,12 +39,12 @@ function activeCount() { return [...state.values()].filter(x => x.status === 'st
 async function ensureRuntime() {
   const marker = path.join(RUNTIME, 'package.json');
   if (fs.existsSync(marker)) return;
-  await fsp.mkdir(path.dirname(RUNTIME), { recursive: true });
+  await fsp.mkdir(RUNTIME, { recursive: true });
   const tmp = path.join(ROOT, '.runtime', 'geston.tar.gz');
   const res = await fetch(REPO_TARBALL);
   if (!res.ok) throw new Error(`GitHub download failed: ${res.status}`);
   await fsp.writeFile(tmp, Buffer.from(await res.arrayBuffer()));
-  await tar.x({ file: tmp, cwd: path.dirname(RUNTIME), strip: 1 });
+  await tar.x({ file: tmp, cwd: RUNTIME, strip: 1 });
   await fsp.rm(tmp, { force: true });
 
   const patches = [
